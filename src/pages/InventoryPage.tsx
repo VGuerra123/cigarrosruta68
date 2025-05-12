@@ -22,7 +22,6 @@ import {
 type ShiftType = "morning" | "afternoon" | "night";
 const ITEMS_PER_PAGE = 78;
 
-// Fade-in + stagger container
 const containerVariants: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
@@ -36,7 +35,6 @@ const containerVariants: Variants = {
   },
 };
 
-// Each card “pop in”
 const itemVariants: Variants = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: {
@@ -77,13 +75,27 @@ const InventoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [displayedItems, setDisplayedItems] = useState(ITEMS_PER_PAGE);
 
-  const filtered = useMemo(
-    () =>
-      cigarettes.filter((c) =>
+  const getCounts = (id: string) => {
+    const rec = inventory.find((r) => r.cigaretteId === id);
+    return {
+      initial: rec?.initialCount ?? null,
+      replenishment: rec?.replenishment ?? null,
+      final: rec?.finalCount ?? null,
+    };
+  };
+
+  const filtered = useMemo(() => {
+    const base = cigarettes
+      .filter((c) =>
         c.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-      ),
-    [debouncedSearch]
-  );
+      )
+      .map((c) => {
+        const counts = getCounts(c.id);
+        const isCompleted = counts[countType] !== null;
+        return { cigarette: c, counts, isCompleted };
+      });
+    return base.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted));
+  }, [debouncedSearch, countType, inventory]);
 
   const observer = useRef<IntersectionObserver>();
   const lastCardRef = useCallback(
@@ -157,15 +169,6 @@ const InventoryPage: React.FC = () => {
     );
   };
 
-  const getCounts = (id: string) => {
-    const rec = inventory.find((r) => r.cigaretteId === id);
-    return {
-      initial: rec?.initialCount ?? null,
-      replenishment: rec?.replenishment ?? null,
-      final: rec?.finalCount ?? null,
-    };
-  };
-
   const display = filtered.slice(0, displayedItems);
   const getTitle = () =>
     validShift === "morning"
@@ -176,7 +179,6 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600">
-      {/* Radial overlay */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.15),transparent)] opacity-50" />
       </div>
@@ -190,7 +192,6 @@ const InventoryPage: React.FC = () => {
         variants={containerVariants}
       >
         <div className="w-full max-w-6xl bg-white/20 backdrop-blur-lg rounded-3xl shadow-xl ring-1 ring-white/30 p-8 transition-shadow hover:shadow-2xl">
-          {/* Segmented control */}
           <div className="mb-8 flex justify-center">
             <div className="inline-flex rounded-full bg-white/30 p-1">
               {(["initial", "replenishment", "final"] as CountType[]).map(
@@ -220,7 +221,6 @@ const InventoryPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Search input */}
           <div className="mb-6 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-200" />
             <input
@@ -235,21 +235,21 @@ const InventoryPage: React.FC = () => {
             />
           </div>
 
-          {/* Cards grid with stagger */}
           <motion.div
             className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
             variants={{ hidden: {}, visible: {} }}
           >
-            {display.map((c, i) => (
+            {display.map(({ cigarette, counts, isCompleted }, i) => (
               <motion.div
-                key={c.id}
+                key={cigarette.id}
                 ref={i === display.length - 1 ? lastCardRef : undefined}
                 variants={itemVariants}
               >
                 <CigaretteCard
-                  cigarette={c}
-                  counts={getCounts(c.id)}
-                  onSelect={() => handleCardSelect(c)}
+                  cigarette={cigarette}
+                  counts={counts}
+                  onSelect={() => handleCardSelect(cigarette)}
+                  disabled={isCompleted}
                 />
               </motion.div>
             ))}

@@ -1,3 +1,5 @@
+// src/components/ui/CigaretteCard.tsx
+
 import React from "react";
 import { motion, Variants } from "framer-motion";
 import { Cigarette } from "../../types";
@@ -10,9 +12,9 @@ interface Props {
     final: number | null;
   };
   onSelect: () => void;
+  disabled?: boolean;
 }
 
-// Hover & tap states with rotate + shadow bounce
 const cardVariants: Variants = {
   rest: { scale: 1, rotate: 0, boxShadow: "0 6px 24px rgba(0,0,0,0.2)" },
   hover: {
@@ -23,25 +25,32 @@ const cardVariants: Variants = {
   tap: { scale: 0.96, rotate: 0 },
 };
 
-const CigaretteCard: React.FC<Props> = ({ cigarette, onSelect }) => (
+const CigaretteCard: React.FC<Props> = ({
+  cigarette,
+  onSelect,
+  counts,
+  disabled = false
+}) => (
   <motion.button
     initial="rest"
-    whileHover="hover"
-    whileTap="tap"
+    whileHover={disabled ? undefined : "hover"}
+    whileTap={disabled ? undefined : "tap"}
     variants={cardVariants}
     transition={{ type: "spring", stiffness: 260, damping: 20 }}
-    onClick={onSelect}
-    className="
+    onClick={disabled ? undefined : onSelect}
+    disabled={disabled}
+    className={`
       relative w-full aspect-[3/4] rounded-2xl
-      bg-white/30 border border-white/40 backdrop-blur-md
-      shadow-lg ring-1 ring-white/30 overflow-hidden
-      flex flex-col items-center justify-center p-4 group
-    "
+      ${disabled ? 'bg-gray-400/30 cursor-not-allowed grayscale' : 'bg-white/30'}
+      border border-white/40 backdrop-blur-md shadow-lg ring-1 ring-white/30
+      overflow-hidden flex flex-col items-center justify-center p-4 group
+    `}
   >
-    {/* Radial glow on hover */}
-    <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-300/40 to-blue-400/30 blur-xl" />
-    </div>
+    {!disabled && (
+      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-300/40 to-blue-400/30 blur-xl" />
+      </div>
+    )}
 
     <img
       src={cigarette.image}
@@ -51,6 +60,12 @@ const CigaretteCard: React.FC<Props> = ({ cigarette, onSelect }) => (
     <p className="text-sm font-semibold text-white text-center leading-tight line-clamp-2">
       {cigarette.name}
     </p>
+
+    {disabled && (
+      <span className="absolute top-2 right-2 text-[10px] font-semibold bg-white text-gray-800 px-2 py-1 rounded-full shadow">
+        Registrado
+      </span>
+    )}
   </motion.button>
 );
 
