@@ -1,5 +1,3 @@
-// src/pages/ReportsPage.tsx
-
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -8,6 +6,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Calendar, FileText, Download } from "lucide-react";
+import { motion, Variants } from "framer-motion";
 import Header from "../components/layout/Header";
 import Button from "../components/ui/Button";
 import { getInventoryRecords } from "../services/firebase";
@@ -27,6 +26,16 @@ const shiftLabels: Record<ShiftOption, string> = {
   night: "Noche",
 };
 
+// Animaciones
+const containerVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { when: "beforeChildren", staggerChildren: 0.1, duration: 0.5 } },
+};
+const itemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
+};
+
 const ReportsPage: React.FC = () => {
   const { user } = useAuth();
   const [records, setRecords] = useState<InventoryRecord[]>([]);
@@ -37,8 +46,7 @@ const ReportsPage: React.FC = () => {
     shift: "all",
   });
 
-  // **1. Definimos aquí las columnas para usar en JSX y en el PDF**
-  const tableColumns: string[] = [
+  const tableColumns = [
     "Fecha",
     "Turno",
     "Producto",
@@ -57,8 +65,8 @@ const ReportsPage: React.FC = () => {
         filters.shift === "all" ? undefined : filters.shift
       );
       setRecords(fetched);
-    } catch (error) {
-      console.error("Error fetching records:", error);
+    } catch (err) {
+      console.error("Error fetching records:", err);
     } finally {
       setLoading(false);
     }
@@ -77,7 +85,6 @@ const ReportsPage: React.FC = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text("Reporte de Inventario de Cigarros", 14, 22);
-
     doc.setFontSize(11);
     doc.text(
       `Período: ${format(filters.startDate, "dd/MM/yyyy")} - ${format(
@@ -89,8 +96,7 @@ const ReportsPage: React.FC = () => {
     );
     doc.text(`Turno: ${shiftLabels[filters.shift]}`, 14, 38);
 
-    // **Usamos la misma tabla de columnas**
-    const tableRows = records.map((r) => [
+    const rows = records.map((r) => [
       r.date,
       shiftLabels[r.shift],
       getCigaretteName(r.cigaretteId),
@@ -103,163 +109,138 @@ const ReportsPage: React.FC = () => {
     autoTable(doc, {
       startY: 45,
       head: [tableColumns],
-      body: tableRows,
+      body: rows,
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [220, 220, 220] },
+      headStyles: { fillColor: [245, 245, 245] },
     });
 
-    const userName = user?.displayName || user?.email || "Usuario";
-    doc.save(`Conteo_Cigarros_${userName}.pdf`);
+    const u = user?.displayName || user?.email || "Usuario";
+    doc.save(`Conteo_Cigarros_${u}.pdf`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600">
+      {/* overlay radial */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.15),transparent)] opacity-50" />
+      </div>
+
       <Header title="Reportes" showBackButton showReportsButton={false} />
 
-      <main className="flex-1 p-4">
-        <div className="max-w-5xl mx-auto">
-          {/* Panel de filtros */}
-          <div className="bg-white rounded-lg shadow p-4 mb-4">
-            <h2 className="text-lg font-semibold mb-3">Filtrar Registros</h2>
+      <motion.main
+        className="flex-1 px-6 py-8"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* filtros */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-white/20 backdrop-blur-lg rounded-3xl shadow-xl ring-1 ring-white/30 p-6"
+          >
+            <h2 className="text-xl font-bold text-white mb-4">Filtrar Registros</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Fecha Inicio */}
+              {/* fecha inicio */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha Inicio
-                </label>
+                <label className="block text-sm font-medium text-white mb-1">Fecha Inicio</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar size={16} className="text-gray-400" />
-                  </div>
+                  <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white" />
                   <DatePicker
                     selected={filters.startDate}
-                    onChange={(d: Date) =>
-                      setFilters((f) => ({ ...f, startDate: d }))
-                    }
+                    onChange={(d: Date) => setFilters((f) => ({ ...f, startDate: d }))}
                     locale="es"
                     dateFormat="dd/MM/yyyy"
-                    className="block w-full pl-10 pr-3 py-2 border rounded-md"
+                    className="w-full pl-10 pr-3 py-2 rounded-lg bg-white/30 text-white placeholder-white outline-none focus:ring-2 focus:ring-purple-300 transition"
                   />
                 </div>
               </div>
-              {/* Fecha Fin */}
+              {/* fecha fin */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha Fin
-                </label>
+                <label className="block text-sm font-medium text-white mb-1">Fecha Fin</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar size={16} className="text-gray-400" />
-                  </div>
+                  <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white" />
                   <DatePicker
                     selected={filters.endDate}
-                    onChange={(d: Date) =>
-                      setFilters((f) => ({ ...f, endDate: d }))
-                    }
+                    onChange={(d: Date) => setFilters((f) => ({ ...f, endDate: d }))}
                     locale="es"
                     dateFormat="dd/MM/yyyy"
-                    className="block w-full pl-10 pr-3 py-2 border rounded-md"
+                    className="w-full pl-10 pr-3 py-2 rounded-lg bg-white/30 text-white placeholder-white outline-none focus:ring-2 focus:ring-purple-300 transition"
                   />
                 </div>
               </div>
-              {/* Turno */}
+              {/* turno */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Turno
-                </label>
+                <label className="block text-sm font-medium text-white mb-1">Turno</label>
                 <select
                   value={filters.shift}
-                  onChange={(e) =>
-                    setFilters((f) => ({
-                      ...f,
-                      shift: e.target.value as ShiftOption,
-                    }))
-                  }
-                  className="block w-full py-2 px-3 border rounded-md"
+                  onChange={(e) => setFilters((f) => ({ ...f, shift: e.target.value as ShiftOption }))}
+                  className="w-full py-2 px-3 rounded-lg bg-white/30 text-white outline-none focus:ring-2 focus:ring-purple-300 transition"
                 >
                   {shiftOptions.map((opt) => (
-                    <option key={opt} value={opt}>
+                    <option key={opt} value={opt} className="bg-white/80 text-gray-800">
                       {shiftLabels[opt]}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
-              <Button
+            <div className="mt-6 text-right">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
                 onClick={handleExportPDF}
-                icon={<Download size={16} />}
-                disabled={records.length === 0}
               >
-                Exportar a PDF
-              </Button>
+                <Button icon={<Download size={16} />} disabled={records.length === 0}>
+                  Exportar a PDF
+                </Button>
+              </motion.button>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Contenido */}
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-500" />
-            </div>
-          ) : records.length > 0 ? (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+          {/* tabla o mensaje */}
+          <motion.div variants={itemVariants}>
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-white border-t-transparent" />
+              </div>
+            ) : records.length > 0 ? (
+              <div className="bg-white/20 backdrop-blur-lg rounded-3xl shadow-xl ring-1 ring-white/30 overflow-auto">
+                <table className="min-w-full divide-y divide-white/30">
+                  <thead className="bg-white/20">
                     <tr>
-                      {tableColumns.map((col: string) => (
-                        <th
-                          key={col}
-                          className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500"
-                        >
+                      {tableColumns.map((col) => (
+                        <th key={col} className="px-6 py-3 text-left text-xs font-semibold text-white/90 uppercase">
                           {col}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                  <tbody className="divide-y divide-white/30">
                     {records.map((r) => (
-                      <tr key={r.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {r.date}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {shiftLabels[r.shift]}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {getCigaretteName(r.cigaretteId)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {r.initialCount ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {r.replenishment ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {r.finalCount ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {r.userName}
-                        </td>
+                      <tr key={r.id} className="hover:bg-white/10 transition">
+                        <td className="px-6 py-4 text-sm text-white">{r.date}</td>
+                        <td className="px-6 py-4 text-sm text-white">{shiftLabels[r.shift]}</td>
+                        <td className="px-6 py-4 text-sm text-white">{getCigaretteName(r.cigaretteId)}</td>
+                        <td className="px-6 py-4 text-sm text-white">{r.initialCount ?? "-"}</td>
+                        <td className="px-6 py-4 text-sm text-white">{r.replenishment ?? "-"}</td>
+                        <td className="px-6 py-4 text-sm text-white">{r.finalCount ?? "-"}</td>
+                        <td className="px-6 py-4 text-sm text-white">{r.userName}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <FileText size={48} className="text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-1">
-                No hay registros
-              </h3>
-              <p className="text-gray-500">
-                No se encontraron registros con los filtros seleccionados.
-              </p>
-            </div>
-          )}
+            ) : (
+              <div className="bg-white/20 backdrop-blur-lg rounded-3xl shadow-xl ring-1 ring-white/30 p-10 text-center">
+                <FileText size={48} className="text-white mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">No hay registros</h3>
+                <p className="text-white/80">No se encontraron registros con los filtros seleccionados.</p>
+              </div>
+            )}
+          </motion.div>
         </div>
-      </main>
+      </motion.main>
     </div>
   );
 };

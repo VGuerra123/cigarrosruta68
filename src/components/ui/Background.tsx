@@ -1,17 +1,12 @@
 // src/components/ui/ParticleBackground.tsx
 import React, { useEffect, useRef } from 'react';
 
-/* -------------------------------------------------------------------------- */
-/*  Tipos                                                                     */
-/* -------------------------------------------------------------------------- */
 export type TimeOfDay = 'morning' | 'afternoon' | 'night';
 
 interface ParticleBackgroundProps {
-  /** Gradiente base; si no se pasa, se usa 'afternoon' */
   timeOfDay?: TimeOfDay;
 }
 
-/* Gradientes Tailwind por tramo horario */
 const gradients: Record<TimeOfDay, string> = {
   morning:   'from-[#6EB5FF] via-[#4C95FF] to-[#3578E6]',
   afternoon: 'from-[#4C84FF] via-[#3A6FFF] to-[#0048CA]',
@@ -23,25 +18,18 @@ const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  /* ------------------------------------------------------------------------ */
-  /*  Efecto Partículas                                                       */
-  /* ------------------------------------------------------------------------ */
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
-
     const DPR = window.devicePixelRatio || 1;
+
     let w = (canvas.width = window.innerWidth * DPR);
     let h = (canvas.height = window.innerHeight * DPR);
-    ctx.scale(DPR, DPR); // evita blur en pantallas retina
+    ctx.scale(DPR, DPR);
 
     const particles: {
-      x: number;
-      y: number;
-      size: number;
-      vx: number;
-      vy: number;
-      opacity: number;
+      x: number; y: number; size: number;
+      vx: number; vy: number; opacity: number;
     }[] = [];
 
     const init = () => {
@@ -69,7 +57,6 @@ const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
 
     init();
     let rafId: number;
-
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
       particles.forEach(p => {
@@ -84,7 +71,6 @@ const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
         if (p.x < 0 || p.x > w / DPR) p.vx *= -1;
         if (p.y < 0 || p.y > h / DPR) p.vy *= -1;
       });
-
       rafId = requestAnimationFrame(draw);
     };
     draw();
@@ -95,13 +81,10 @@ const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
     };
   }, []);
 
-  /* ------------------------------------------------------------------------ */
-  /*  Render                                                                  */
-  /* ------------------------------------------------------------------------ */
   return (
     <div
       className={`
-        absolute inset-0 -z-10 overflow-hidden
+        absolute inset-0 -z-20 overflow-hidden
         bg-gradient-to-b ${gradients[timeOfDay]}
       `}
     >

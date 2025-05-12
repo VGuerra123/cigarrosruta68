@@ -44,10 +44,22 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md bg-blue-600/70 border-b border-blue-500 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+    <header
+      className="
+        sticky top-0 z-50
+        backdrop-filter backdrop-blur-lg
+        bg-blue-600/50
+        border-b border-blue-500/30
+        shadow-[0_4px_30px_rgba(0,0,0,0.3)]
+      "
+    >
       {/* Progress bar */}
       <div
-        className="h-1 bg-gradient-to-r from-purple-400 via-blue-300 to-blue-500"
+        className="
+          h-1
+          bg-gradient-to-r
+          from-purple-400/80 via-blue-300/80 to-blue-500/80
+        "
         style={{ width: `${scrollPct}%`, transition: 'width 0.2s ease-out' }}
       />
 
@@ -58,7 +70,7 @@ const Header: React.FC<HeaderProps> = ({
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => navigate(-1)}
-              className="p-2 rounded-full hover:bg-blue-500 transition-shadow shadow-lg"
+              className="p-2 rounded-full hover:bg-blue-500/30 transition-shadow shadow-lg"
               aria-label="Atrás"
             >
               <ChevronLeft size={24} />
@@ -66,18 +78,21 @@ const Header: React.FC<HeaderProps> = ({
           )}
 
           <motion.img
-            src="/assets/logo.webp"
+            src="/assets/prontin-fumador.webp"
             alt="Pronto Copec"
-            className="h-8 w-auto cursor-pointer filter drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]"
+            className="
+              h-10 w-auto cursor-pointer
+              filter drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]
+            "
             onError={e => { (e.target as HTMLImageElement).src = '/assets/logo.png'; }}
             onClick={() => navigate('/')}
-            animate={{ opacity: [1, 0.8, 1] }}
+            animate={{ opacity: [1, 0.7, 1] }}
             transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
           />
 
           {title && (
             <motion.h1
-              className="text-lg font-semibold ml-4"
+              className="text-lg font-semibold ml-4 text-white"
               initial="rest"
               whileHover="hover"
               animate="rest"
@@ -99,7 +114,7 @@ const Header: React.FC<HeaderProps> = ({
               whileHover={{ rotate: 10, scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => navigate('/reports')}
-              className="p-2 rounded-full hover:bg-blue-500 transition-shadow shadow-lg"
+              className="p-2 rounded-full hover:bg-blue-500/30 transition-shadow shadow-lg"
               title="Ver reportes"
             >
               <BarChart3 size={22} />
@@ -111,7 +126,7 @@ const Header: React.FC<HeaderProps> = ({
               whileHover={{ rotate: 10, scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleSignOut}
-              className="p-2 rounded-full hover:bg-blue-500 transition-shadow shadow-lg"
+              className="p-2 rounded-full hover:bg-blue-500/30 transition-shadow shadow-lg"
               title="Cerrar sesión"
             >
               <LogOut size={22} />

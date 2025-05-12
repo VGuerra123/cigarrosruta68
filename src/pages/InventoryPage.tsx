@@ -7,12 +7,11 @@ import React, {
   useMemo,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, Variants } from "framer-motion";
 import { Search } from "lucide-react";
 import Header from "../components/layout/Header";
 import CigaretteCard from "../components/ui/CigaretteCard";
 import CountModal from "../components/ui/CountModal";
-import Button from "../components/ui/Button";
 import { cigarettes } from "../data/cigarettes";
 import { Cigarette, CountType, InventoryRecord } from "../types";
 import {
@@ -20,27 +19,42 @@ import {
   getCurrentShiftInventory,
 } from "../services/firebase";
 
-/* -------------------------------------------------------------------------- */
-/* Configuración                                                              */
-/* -------------------------------------------------------------------------- */
 type ShiftType = "morning" | "afternoon" | "night";
 const ITEMS_PER_PAGE = 78;
 
-/* -------------------------------------------------------------------------- */
-/* Hook debounce                                                              */
-/* -------------------------------------------------------------------------- */
+// Fade-in + stagger container
+const containerVariants: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.08,
+      duration: 0.5,
+    },
+  },
+};
+
+// Each card “pop in”
+const itemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { type: "spring", stiffness: 300, damping: 24 },
+  },
+};
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const h = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(h);
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
   }, [value, delay]);
   return debounced;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Componente principal                                                       */
-/* -------------------------------------------------------------------------- */
 const InventoryPage: React.FC = () => {
   const { shift } = useParams<{ shift: string }>();
   const navigate = useNavigate();
@@ -51,12 +65,10 @@ const InventoryPage: React.FC = () => {
     ? (shift as ShiftType)
     : null;
 
-  /* ------------ redirect si turno inválido ------------ */
   useEffect(() => {
     if (!validShift) navigate("/");
-  }, [validShift]);
+  }, [validShift, navigate]);
 
-  /* ------------------ estado página ------------------- */
   const [countType, setCountType] = useState<CountType>("initial");
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -65,7 +77,6 @@ const InventoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [displayedItems, setDisplayedItems] = useState(ITEMS_PER_PAGE);
 
-  /* ---------------- filtrado --------------------------- */
   const filtered = useMemo(
     () =>
       cigarettes.filter((c) =>
@@ -74,7 +85,6 @@ const InventoryPage: React.FC = () => {
     [debouncedSearch]
   );
 
-  /* ---------------- infinite scroll ------------------- */
   const observer = useRef<IntersectionObserver>();
   const lastCardRef = useCallback(
     (node: HTMLDivElement) => {
@@ -99,7 +109,6 @@ const InventoryPage: React.FC = () => {
     [loading, displayedItems, filtered.length]
   );
 
-  /* ---------------- carga inicial --------------------- */
   useEffect(() => {
     const fetchInv = async () => {
       if (!validShift) return;
@@ -115,7 +124,6 @@ const InventoryPage: React.FC = () => {
     fetchInv();
   }, [validShift]);
 
-  /* ---------------- handlers -------------------------- */
   const [selected, setSelected] = useState<Cigarette | null>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -124,7 +132,6 @@ const InventoryPage: React.FC = () => {
     setShowModal(true);
   };
 
-  /* ----- guardado optimista para counts (más rápido) -- */
   const handleSave = async (
     id: string,
     type: CountType,
@@ -132,7 +139,6 @@ const InventoryPage: React.FC = () => {
   ): Promise<void> => {
     if (!validShift) return;
     setShowModal(false);
-
     setInventory((prev) =>
       prev.map((r) =>
         r.cigaretteId === id
@@ -146,8 +152,6 @@ const InventoryPage: React.FC = () => {
           : r
       )
     );
-
-    // fire-and-forget
     saveInventoryCount(id, type, count, validShift).catch((err) =>
       console.error("Error guardando optimista:", err)
     );
@@ -163,7 +167,6 @@ const InventoryPage: React.FC = () => {
   };
 
   const display = filtered.slice(0, displayedItems);
-
   const getTitle = () =>
     validShift === "morning"
       ? "Turno de Mañana"
@@ -171,90 +174,95 @@ const InventoryPage: React.FC = () => {
       ? "Turno de Tarde"
       : "Turno de Noche";
 
-  /* ------------------------------------------------------------------------ */
-  /* Render                                                                   */
-  /* ------------------------------------------------------------------------ */
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* background gradient + sutil bokeh animado */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#1a2980] via-[#267871] to-[#0f2027]" />
-      <div className="absolute -inset-20 -z-10 opacity-40 blur-3xl pointer-events-none animate-[pulse_14s_ease-in-out_infinite] bg-[radial-gradient(ellipse_at_top_left,var(--tw-gradient-stops))] from-emerald-400 via-sky-500 to-fuchsia-500" />
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600">
+      {/* Radial overlay */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.15),transparent)] opacity-50" />
+      </div>
 
       <Header title={getTitle()} showBackButton showReportsButton />
 
-      <main className="flex-1 flex justify-center px-4 py-6">
-        {/* contenedor glass */}
-        <div
-          className="
-            w-full max-w-6xl bg-white/10 backdrop-blur-xl
-            rounded-[28px] ring-1 ring-white/15
-            shadow-[0_35px_120px_rgba(0,0,0,0.35)]
-            px-8 py-7
-          "
-        >
-          {/* selector de tipo de conteo */}
-          <div className="mb-7 flex justify-center gap-4">
-            {(["initial", "replenishment", "final"] as CountType[]).map((t) => (
-              <Button
-                key={t}
-                onClick={() => setCountType(t)}
-                variant={countType === t ? "primary" : "outline"}
-                size="md"
-                className="backdrop-blur-md"
-              >
-                {t === "initial"
-                  ? "Inicial"
-                  : t === "replenishment"
-                  ? "Reposición"
-                  : "Final"}
-              </Button>
-            ))}
+      <motion.main
+        className="flex-1 flex justify-center px-6 py-8"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <div className="w-full max-w-6xl bg-white/20 backdrop-blur-lg rounded-3xl shadow-xl ring-1 ring-white/30 p-8 transition-shadow hover:shadow-2xl">
+          {/* Segmented control */}
+          <div className="mb-8 flex justify-center">
+            <div className="inline-flex rounded-full bg-white/30 p-1">
+              {(["initial", "replenishment", "final"] as CountType[]).map(
+                (t) => (
+                  <motion.button
+                    key={t}
+                    onClick={() => setCountType(t)}
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.2 }}
+                    className={`
+                      px-5 py-2 rounded-full text-sm font-medium transition
+                      ${
+                        countType === t
+                          ? "bg-gradient-to-r from-purple-400 to-blue-500 text-white shadow-lg"
+                          : "text-gray-800 hover:bg-white/50"
+                      }
+                    `}
+                  >
+                    {t === "initial"
+                      ? "Inicial"
+                      : t === "replenishment"
+                      ? "Reposición"
+                      : "Final"}
+                  </motion.button>
+                )
+              )}
+            </div>
           </div>
 
-          {/* buscador */}
-          <div className="mb-8 relative">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+          {/* Search input */}
+          <div className="mb-6 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-200" />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar cigarrillos…"
               className="
-                w-full pl-14 pr-5 py-3 rounded-xl
-                bg-white/15 backdrop-blur-md
-                border border-white/20 ring-1 ring-inset ring-white/5
-                focus:ring-2 focus:ring-sky-400 focus:border-transparent
-                text-slate-100 placeholder-slate-300
-                shadow-inner
-                outline-none transition
+                w-full pl-12 pr-4 py-3 rounded-xl bg-white/30
+                text-white placeholder-gray-200 shadow-inner
+                focus:ring-2 focus:ring-purple-400 outline-none transition
               "
             />
           </div>
 
-          {/* grid de tarjetas (glass) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+          {/* Cards grid with stagger */}
+          <motion.div
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
+            variants={{ hidden: {}, visible: {} }}
+          >
             {display.map((c, i) => (
-              <div
+              <motion.div
                 key={c.id}
                 ref={i === display.length - 1 ? lastCardRef : undefined}
+                variants={itemVariants}
               >
                 <CigaretteCard
                   cigarette={c}
                   counts={getCounts(c.id)}
                   onSelect={() => handleCardSelect(c)}
                 />
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {loading && (
-            <div className="flex justify-center py-10">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-sky-300 border-t-transparent" />
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent" />
             </div>
           )}
         </div>
-      </main>
+      </motion.main>
 
-      {/* modal de conteo */}
       <AnimatePresence>
         {selected && (
           <CountModal
