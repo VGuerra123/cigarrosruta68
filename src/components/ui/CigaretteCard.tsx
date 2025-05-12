@@ -28,7 +28,6 @@ const cardVariants: Variants = {
 const CigaretteCard: React.FC<Props> = ({
   cigarette,
   onSelect,
-  counts,
   disabled = false
 }) => (
   <motion.button

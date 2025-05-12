@@ -1,6 +1,6 @@
 // src/components/ui/LoadingScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const LoadingScreen: React.FC = () => {
   const [progress, setProgress] = useState(0);
