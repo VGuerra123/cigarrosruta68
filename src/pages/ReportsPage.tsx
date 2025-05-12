@@ -13,6 +13,7 @@ import Button from "../components/ui/Button";
 import { getInventoryRecords } from "../services/firebase";
 import { InventoryRecord, ReportFilters } from "../types";
 import { cigarettes } from "../data/cigarettes";
+import { useAuth } from "../context/AuthContext";
 
 // registrar locale español
 registerLocale("es", es);
@@ -27,6 +28,7 @@ const shiftLabels: Record<ShiftOption, string> = {
 };
 
 const ReportsPage: React.FC = () => {
+  const { user } = useAuth();
   const [records, setRecords] = useState<InventoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ReportFilters>({
@@ -34,6 +36,17 @@ const ReportsPage: React.FC = () => {
     endDate: new Date(),
     shift: "all",
   });
+
+  // **1. Definimos aquí las columnas para usar en JSX y en el PDF**
+  const tableColumns: string[] = [
+    "Fecha",
+    "Turno",
+    "Producto",
+    "Inicial",
+    "Reposición",
+    "Final",
+    "Usuario",
+  ];
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -76,20 +89,32 @@ const ReportsPage: React.FC = () => {
     );
     doc.text(`Turno: ${shiftLabels[filters.shift]}`, 14, 38);
 
-    // Agrupar y generar tablas…
-    // (resto del código de exportación permanece igual) :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
+    // **Usamos la misma tabla de columnas**
+    const tableRows = records.map((r) => [
+      r.date,
+      shiftLabels[r.shift],
+      getCigaretteName(r.cigaretteId),
+      r.initialCount?.toString() ?? "-",
+      r.replenishment?.toString() ?? "-",
+      r.finalCount?.toString() ?? "-",
+      r.userName,
+    ]);
 
-    doc.save(`reporte-inventario-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    autoTable(doc, {
+      startY: 45,
+      head: [tableColumns],
+      body: tableRows,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [220, 220, 220] },
+    });
+
+    const userName = user?.displayName || user?.email || "Usuario";
+    doc.save(`Conteo_Cigarros_${userName}.pdf`);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ← Aquí agregamos el Header con logo y título */}
-      <Header 
-        title="Reportes" 
-        showBackButton 
-        showReportsButton={false} 
-      />
+      <Header title="Reportes" showBackButton showReportsButton={false} />
 
       <main className="flex-1 p-4">
         <div className="max-w-5xl mx-auto">
@@ -171,7 +196,7 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Contenido: spinner, tabla o mensaje de vacío */}
+          {/* Contenido */}
           {loading ? (
             <div className="flex justify-center py-20">
               <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-500" />
@@ -182,27 +207,14 @@ const ReportsPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                        Fecha
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                        Turno
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                        Producto
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                        Inicial
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                        Reposición
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                        Final
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                        Usuario
-                      </th>
+                      {tableColumns.map((col: string) => (
+                        <th
+                          key={col}
+                          className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500"
+                        >
+                          {col}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">

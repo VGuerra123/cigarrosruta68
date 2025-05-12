@@ -1,96 +1,81 @@
-// src/components/ui/ShiftSelector.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Moon, Sunset } from 'lucide-react';
+import ShiftCard from './ShiftCard.tsx';
+import { formatCurrentDate } from '../../utils/timeUtils';
 
 interface ShiftSelectorProps {
   onSelectShift: (shift: 'morning' | 'afternoon' | 'night') => void;
+  currentTimeOfDay: 'morning' | 'afternoon' | 'night';
 }
 
-const shifts = [
-  { id: 'morning', name: 'Mañana', Icon: Sun },
-  { id: 'afternoon', name: 'Tarde', Icon: Sunset },
-  { id: 'night', name: 'Noche', Icon: Moon },
-] as const;
+const ShiftSelector: React.FC<ShiftSelectorProps> = ({ onSelectShift, currentTimeOfDay }) => {
+  const [hoveredShift, setHoveredShift] = useState<string | null>(null);
+  const formattedDate = formatCurrentDate();
 
-// Variants para animar la aparición
-const container = {
-  hidden: { opacity: 0, y: 32 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { when: 'beforeChildren', staggerChildren: 0.12 },
-  },
-};
-const item = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0 },
-};
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.2 }
+    }
+  };
 
-const ShiftSelector: React.FC<ShiftSelectorProps> = ({ onSelectShift }) => (
-  <motion.section
-    variants={container}
-    initial="hidden"
-    animate="show"
-    className="
-      w-full max-w-md mx-auto
-      px-6 py-8
-      bg-gradient-to-br from-white to-blue-50/40
-      backdrop-blur-sm rounded-3xl
-      shadow-xl
-      "
-  >
-    <motion.h2
-      variants={item}
-      className="
-        text-2xl md:text-3xl font-semibold
-        text-blue-700 text-center
-        mb-6
-        relative
-      "
-    >
-      Selecciona tu turno
-      {/* Línea de acento bajo el título */}
-      <span className="absolute bottom-0 left-1/2 w-16 h-0.5 bg-blue-600 rounded-full -translate-x-1/2"></span>
-    </motion.h2>
+  const shifts = [
+    {
+      id: 'morning',
+      title: 'Mañana',
+      hours: '07:00 - 15:00',
+      icon: 'sun',
+    },
+    {
+      id: 'afternoon',
+      title: 'Tarde',
+      hours: '15:00 - 23:00',
+      icon: 'sunset',
+    },
+    {
+      id: 'night',
+      title: 'Noche',
+      hours: '23:00 - 07:00',
+      icon: 'moon',
+    }
+  ];
 
-    <div className="flex flex-col gap-5">
-      {shifts.map(({ id, name, Icon }) => (
-        <motion.button
-          key={id}
-          variants={item}
-          onClick={() => onSelectShift(id)}
-          whileHover={{ translateY: -3 }}
-          whileTap={{ scale: 0.96 }}
-          transition={{ type: 'spring', stiffness: 140, damping: 18 }}
-          className="
-            flex items-center w-full
-            bg-white rounded-2xl p-4
-            shadow-md hover:shadow-2xl
-            focus:outline-none focus:ring-2 focus:ring-blue-300
-            transition-shadow duration-200
-          "
-          aria-label={`Seleccionar turno ${name}`}
-        >
-          <motion.span
-            className="
-              flex-shrink-0 grid place-items-center
-              w-14 h-14 rounded-full
-              bg-blue-100 text-blue-600
-            "
-            whileHover={{ scale: 1.1, rotate: 10 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-          >
-            <Icon size={26} />
-          </motion.span>
+  return (
+    <div className="p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="mb-6 text-center"
+      >
+        <h2 className="text-white text-2xl md:text-3xl font-semibold mb-2">Selecciona tu Turno</h2>
+        <p className="text-white/70 text-sm md:text-base">{formattedDate}</p>
+      </motion.div>
 
-          <span className="ml-5 text-lg md:text-xl font-medium text-slate-800">
-            {name}
-          </span>
-        </motion.button>
-      ))}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-4"
+      >
+        {shifts.map((shift) => (
+          <ShiftCard
+            key={shift.id}
+            shift={shift.id as 'morning' | 'afternoon' | 'night'}
+            title={shift.title}
+            hours={shift.hours}
+            icon={shift.icon}
+            isRecommended={shift.id === currentTimeOfDay}
+            isHovered={hoveredShift === shift.id}
+            onHover={() => setHoveredShift(shift.id)}
+            onLeave={() => setHoveredShift(null)}
+            onSelect={() => onSelectShift(shift.id as 'morning' | 'afternoon' | 'night')}
+          />
+        ))}
+      </motion.div>
     </div>
-  </motion.section>
-);
+  );
+};
 
 export default ShiftSelector;

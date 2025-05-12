@@ -1,97 +1,50 @@
-// src/components/ui/CigaretteCard.tsx
+import React from "react";
+import { motion } from "framer-motion";
+import { Cigarette } from "../../types";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Cigarette, CountType } from '../../types';
-
-interface CigaretteCardProps {
+interface Props {
   cigarette: Cigarette;
-  onSelect: (cig: Cigarette) => void;
-  counts?: {
+  counts: {
     initial: number | null;
     replenishment: number | null;
     final: number | null;
   };
+  onSelect: () => void;
 }
 
-const CigaretteCard: React.FC<CigaretteCardProps> = ({
-  cigarette,
-  onSelect,
-  counts
-}) => {
-  const hasInitial = counts?.initial != null;
-  const hasReplenishment = counts?.replenishment != null;
-  const hasFinal = counts?.final != null;
-
-  const getStatusColor = () => {
-    if (hasInitial && hasReplenishment && hasFinal) return 'bg-green-500';
-    if (hasInitial || hasReplenishment || hasFinal) return 'bg-yellow-500';
-    return 'bg-gray-300';
-  };
-
-  return (
-    <motion.div
-      whileTap={{ scale: 0.98 }}
-      className="relative bg-white rounded-lg shadow-md overflow-hidden"
-      onClick={() => onSelect(cigarette)}
+const CigaretteCard: React.FC<Props> = ({ cigarette, onSelect }) => (
+  <motion.button
+    whileHover={{ y: -6, boxShadow: "0 12px 32px rgba(0,0,0,0.35)" }}
+    whileTap={{ scale: 0.96 }}
+    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+    onClick={onSelect}
+    className="
+      relative w-full aspect-[3/4] rounded-2xl
+      bg-white/10 border border-white/20 backdrop-blur-md
+      shadow-[0_6px_24px_rgba(0,0,0,0.25)]
+      ring-1 ring-inset ring-white/15 overflow-hidden
+      flex flex-col items-center justify-center p-3 group
+    "
+  >
+    {/* Radial glow on hover */}
+    <div
+      className="
+        pointer-events-none absolute inset-0
+        opacity-0 group-hover:opacity-100 transition-opacity duration-300
+      "
     >
-      <div
-        className={`absolute top-2 right-2 w-3 h-3 rounded-full ${getStatusColor()}`}
-        title={
-          hasInitial && hasReplenishment && hasFinal
-            ? 'Completado'
-            : hasInitial || hasReplenishment || hasFinal
-              ? 'Parcial'
-              : 'Sin iniciar'
-        }
-      />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-white/5 blur-xl" />
+    </div>
 
-      <div className="h-32 bg-gray-100 flex items-center justify-center p-2">
-        <img
-          src={cigarette.image}
-          alt={cigarette.name}
-          loading="lazy"
-          className="h-full object-contain"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '/assets/placeholder.png';
-          }}
-        />
-      </div>
+    <img
+      src={cigarette.image}
+      alt={cigarette.name}
+      className="h-24 object-contain mb-3 drop-shadow-md"
+    />
+    <p className="text-sm font-semibold text-gray-50 text-center leading-tight line-clamp-2">
+      {cigarette.name}
+    </p>
+  </motion.button>
+);
 
-      <div className="p-3">
-        <h3
-          className="text-sm font-medium text-gray-900 truncate"
-          title={cigarette.name}
-        >
-          {cigarette.name}
-        </h3>
-
-        {(hasInitial || hasReplenishment || hasFinal) && (
-          <div className="mt-2 text-xs space-y-0.5">
-            {hasInitial && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">Inicial:</span>
-                <span className="font-medium">{counts!.initial}</span>
-              </div>
-            )}
-            {hasReplenishment && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">Reposición:</span>
-                <span className="font-medium">{counts!.replenishment}</span>
-              </div>
-            )}
-            {hasFinal && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">Final:</span>
-                <span className="font-medium">{counts!.final}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-};
-
-// Memoizamos para que sólo re-renderice la card cambiada :contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
-export default React.memo(CigaretteCard);
+export default CigaretteCard;
